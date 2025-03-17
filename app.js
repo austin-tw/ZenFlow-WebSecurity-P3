@@ -11,12 +11,16 @@ const csrf = require("csurf");
 const https = require("https");
 const fs = require("fs");
 const hsts = require("hsts");
+const { ensureAuthenticated, ensureSuperUser } = require("./middlewares/auth");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.set("view engine", "ejs");
+
+// Add URL-encoded body parser
+app.use(express.urlencoded({ extended: true }));
 
 // Session configuration
 app.use(
@@ -137,7 +141,54 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Routes
+// Phase 3 Update User Profile -------------------------------↓↓↓↓↓↓↓↓↓↓
+app.post("/update-profile", ensureSuperUser, async (req, res) => {
+  try {
+    const { firstName, lastName, email, bio } = req.body;
 
+    // Input validation
+    if (!firstName || !lastName || !email) {
+      return res.status(400).json({ error: "Required fields missing" });
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Name pattern validation
+    const nameRegex = /^[A-Za-z]{3,50}$/;
+    if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+      return res.status(400).json({ error: "Names must be 3-50 letters only" });
+    }
+
+    // Bio validation
+    if (bio && bio.length > 500) {
+      return res
+        .status(400)
+        .json({ error: "Bio must not exceed 500 characters" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update user fields
+    user.username = `${firstName} ${lastName}`;
+    user.email = email;
+    user.bio = bio || "";
+
+    await user.save();
+
+    res.redirect("/super-dashboard");
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+// Phase 3 Update User Profile -------------------------------↑↑↑↑↑↑↑↑
 app.get("/", cacheMiddleware, (req, res) => {
   res.render("index");
 });
@@ -179,8 +230,6 @@ app.get("/product", cacheMiddleware, (req, res) => {
 app.get("/error", (req, res) => {
   res.render("error");
 });
-
-const { ensureAuthenticated, ensureSuperUser } = require("./middlewares/auth");
 
 // Superuser-only route
 app.get("/super-dashboard", ensureSuperUser, (req, res) => {

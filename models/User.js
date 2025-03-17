@@ -9,24 +9,24 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      // enum: ["user", "admin", "superuser"],
       default: "user",
     },
     firstName: {
       type: String,
-      required: true,
+      required: false,
     },
     lastName: {
       type: String,
-      required: true,
+      required: false,
     },
     email: {
       type: String,
-      required: true,
+      required: false,
       unique: true,
     },
     bio: {
