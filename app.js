@@ -137,6 +137,7 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Routes
+
 app.get("/", cacheMiddleware, (req, res) => {
   res.render("index");
 });
