@@ -39,7 +39,7 @@ Bonus Marks:
    `cd google-sso-example`
 3. Run the following command to create a package.json file: npm init -y
 4. Run the following command to install the required packages:
-   `npm install express argon2 mongoose body-parser dotenv JSON web token express-session passport passport-google-oauth20 helmet connect-mongo csurf ejs https fs hsts`
+   `npm install express argon2 mongoose body-parser dotenv JSON web token express-session passport passport-google-oauth20 helmet connect-mongo csurf ejs https fs hsts express-validator`
 5. Download the files from the repository and paste into your project folder
 6. Create a .env file including:
 
