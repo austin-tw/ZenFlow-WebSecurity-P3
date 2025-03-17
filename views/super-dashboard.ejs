@@ -8,6 +8,20 @@
     </h3>
     <a href="/logout">Logout</a>
 
+    <h2>User Profile Update</h2>
+    <form>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" pattern="[A-Za-z]{3,50}" required>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="bio">Bio:</label>
+        <input type="text" id="bio" name="bio" pattern="[A-Za-z0-9\s.,!?-]{0,500}" maxlength="500">
+
+        <input type="submit" value="Update">
+    </form>
+
     <div class="stats">
         <h2>Completion Stats</h2>
         <ul>
