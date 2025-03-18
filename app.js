@@ -144,10 +144,10 @@ passport.deserializeUser(async (id, done) => {
 // Phase 3 Update User Profile -------------------------------↓↓↓↓↓↓↓↓↓↓
 app.post("/update-profile", ensureSuperUser, async (req, res) => {
   try {
-    const { firstName, lastName, email, bio } = req.body;
+    const { screenName, email, bio } = req.body;
 
     // Input validation
-    if (!firstName || !lastName || !email) {
+    if (!screenName || !email) {
       return res.status(400).json({ error: "Required fields missing" });
     }
 
@@ -157,10 +157,13 @@ app.post("/update-profile", ensureSuperUser, async (req, res) => {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    // Name pattern validation
-    const nameRegex = /^[A-Za-z]{3,50}$/;
-    if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
-      return res.status(400).json({ error: "Names must be 3-50 letters only" });
+    // Screen name pattern validation
+    const nameRegex = /^[A-Za-z0-9]{3,50}$/;
+    if (!nameRegex.test(screenName)) {
+      return res.status(400).json({
+        error:
+          "Screen name must be 3-50 characters and can only contain letters and numbers",
+      });
     }
 
     // Bio validation
@@ -176,13 +179,13 @@ app.post("/update-profile", ensureSuperUser, async (req, res) => {
     }
 
     // Update user fields
-    user.username = `${firstName} ${lastName}`;
+    user.screenName = screenName; // Update screenName separately
     user.email = email;
     user.bio = bio || "";
 
     await user.save();
 
-    res.redirect("/super-dashboard");
+    res.render("profile_updated");
   } catch (err) {
     console.error("Error updating profile:", err);
     res.status(500).json({ error: "Internal server error" });

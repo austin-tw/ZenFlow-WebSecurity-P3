@@ -13,14 +13,9 @@ const UserSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      // enum: ["user", "admin", "superuser"],
       default: "user",
     },
-    firstName: {
-      type: String,
-      required: false,
-    },
-    lastName: {
+    screenName: {
       type: String,
       required: false,
     },

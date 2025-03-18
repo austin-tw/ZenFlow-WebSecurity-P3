@@ -60,6 +60,11 @@ p {
   color: red;
 }
 
+form label {
+  display: block;
+  margin-top: 1rem;
+}
+
 /* ========== Nav Bar ======== */
 #nav-logo {
   width: 11rem;
