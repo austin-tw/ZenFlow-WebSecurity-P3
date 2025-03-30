@@ -11,6 +11,7 @@ const csrf = require("csurf");
 const https = require("https");
 const fs = require("fs");
 const hsts = require("hsts");
+const { body, validationResult } = require("express-validator");
 const { ensureAuthenticated, ensureSuperUser } = require("./middlewares/auth");
 
 const app = express();
@@ -142,55 +143,60 @@ passport.deserializeUser(async (id, done) => {
 
 // Routes
 // Phase 3 Update User Profile -------------------------------↓↓↓↓↓↓↓↓↓↓
-app.post("/update-profile", ensureSuperUser, async (req, res) => {
-  try {
-    const { screenName, email, bio } = req.body;
+app.post(
+  "/update-profile",
+  ensureSuperUser,
+  [
+    body("screenName")
+      .trim()
+      .escape()
+      .matches(/^[A-Za-z0-9]{3,50}$/)
+      .withMessage(
+        "Screen name must be 3-50 characters and can only contain letters and numbers"
+      ),
 
-    // Input validation
-    if (!screenName || !email) {
-      return res.status(400).json({ error: "Required fields missing" });
+    body("email")
+      .trim()
+      .normalizeEmail()
+      .isEmail()
+      .withMessage("Invalid email format"),
+
+    body("bio")
+      .optional()
+      .trim()
+      .escape()
+      .isLength({ max: 500 })
+      .withMessage("Bio must not exceed 500 characters"),
+  ],
+  async (req, res) => {
+    try {
+      // Check for validation errors
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { screenName, email, bio } = req.body;
+
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Update user fields with sanitized data
+      user.screenName = screenName;
+      user.email = email;
+      user.bio = bio || "";
+
+      await user.save();
+
+      res.render("profile_updated");
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      res.status(500).json({ error: "Internal server error" });
     }
-
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: "Invalid email format" });
-    }
-
-    // Screen name pattern validation
-    const nameRegex = /^[A-Za-z0-9]{3,50}$/;
-    if (!nameRegex.test(screenName)) {
-      return res.status(400).json({
-        error:
-          "Screen name must be 3-50 characters and can only contain letters and numbers",
-      });
-    }
-
-    // Bio validation
-    if (bio && bio.length > 500) {
-      return res
-        .status(400)
-        .json({ error: "Bio must not exceed 500 characters" });
-    }
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Update user fields
-    user.screenName = screenName; // Update screenName separately
-    user.email = email;
-    user.bio = bio || "";
-
-    await user.save();
-
-    res.render("profile_updated");
-  } catch (err) {
-    console.error("Error updating profile:", err);
-    res.status(500).json({ error: "Internal server error" });
   }
-});
+);
 // Phase 3 Update User Profile -------------------------------↑↑↑↑↑↑↑↑
 app.get("/", cacheMiddleware, (req, res) => {
   res.render("index");
