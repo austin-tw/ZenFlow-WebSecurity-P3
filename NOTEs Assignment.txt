@@ -35,5 +35,19 @@ I'm using EJS as the templating engine, which automatically escapes content by d
 
 
 
-
-ENCRYPTION_KEY=abcd-32-byte-secret-key-here-12345
+=====
+security-check.yml GitHub Actions Workflow:
+Runs once a week (every Sunday at midnight)
+Simply checks your dependencies for security issues
+Reports any vulnerabilities found
+Local Command at package.json:
+"security": "npm audit"
+Added npm run security command to run security checks locally
+To use this:
+Local Security Check:
+Apply to app.js
+Run
+GitHub Actions:
+The workflow will run automatically every Sunday
+You can see the results in your GitHub repository's "Actions" tab
+If any vulnerabilities are found, you'll see them in the workflow logs
