@@ -1,6 +1,3 @@
-Bonus Marks:
-+15 git commits with clear messages (1)
-
 # Setting Up the Repository
 
 ## Part A: Set Up Google OAuth Credentials
@@ -39,7 +36,7 @@ Bonus Marks:
    `cd google-sso-example`
 3. Run the following command to create a package.json file: npm init -y
 4. Run the following command to install the required packages:
-   `npm install express argon2 mongoose body-parser dotenv JSON web token express-session passport passport-google-oauth20 helmet connect-mongo csurf ejs https fs hsts express-validator connect-flash`
+   `npm install express argon2 mongoose body-parser dotenv JSON web token express-session passport passport-google-oauth20 helmet connect-mongo csurf ejs https fs hsts express-validator`
 5. Download the files from the repository and paste into your project folder
 6. Create a .env file including:
 
@@ -48,35 +45,134 @@ Bonus Marks:
    GOOGLE_CLIENT_ID=(from part A, step d)
    GOOGLE_CLIENT_SECRET=(from part A, step d)
    SESSION_SECRET=(make up your own secret key)
+   ENCRYPTION_KEY=(make up a 32-bit key, example: MySuperSecureEncryptionKey123456)
    DB_CONNECTION=mongodb://127.0.0.1:27017/secure-session
    PORT=3000
 ```
 
-# Authentication Mechanisms
+# Input Validation Implementation
 
-I chose Google SSO (OAuth) over local authentication because it's more convenient for users, as they don’t have to remember another set of login credentials. This results in lower customer support costs for my business, as fewer users need assistance with forgotten passwords. Additionally, by leveraging Google’s web security technology, I reduce my liability for potential hacker attacks.
+I used express-validator to limit the input of:
+Name: 3–50 alphabetic characters
+Email: Follows a standard email format
+Bio: Max 500 characters, no HTML tags and no special characters
 
-Furthermore, I implemented CSRF protection to guard against unauthorized requests and used express-session to secure sessions. For JSON Web Tokens (JWT), my app stores the JWT in an HTTP-only cookie. I implemented this in routes/auth.js. Specifically, in the login route, a JWT token is generated and sent back to the client after a successful login.
+Sanitization is achieved via the following methods (found in \app.js):
 
-# Role-Based Access Control
+```
+const { body, validationResult } = require("express-validator");
 
-I have protected the user dashboard so that a person must log in to gain access; otherwise, they will receive an Error: Invalid Credentials message. I implemented two user roles: user and superuser. The app.js and middleware/auth.js files determine a user's role and forward them to their respective dashboard. A regular user attempting to access the superuser dashboard will also receive an Error: Invalid Credentials message. This ensures that sensitive information and settings can only be accessed by the appropriate role.
+app.post(
+"/update-profile",
+ensureSuperUser,
+[
+body("screenName")
+.trim()
+.escape()
+.matches(/^[A-Za-z0-9]{3,50}$/)
+.withMessage(
+"Screen name must be 3-50 characters and can only contain letters and numbers"
+),
+
+    body("email")
+      .trim()
+      .normalizeEmail()
+      .isEmail()
+      .withMessage("Invalid email format"),
+
+    body("bio")
+      .optional()
+      .trim()
+      .escape()
+      .isLength({ max: 500 })
+      .withMessage("Bio must not exceed 500 characters"),
+
+],
+```
+
+This ensures injected malicious codes would not be executed.
+
+# Output Encoding Implementation
+
+I used EJS as the templating engine, which automatically escapes content by default when using the <%= %> tags. To ensure injected malicious codes would not be executed.
+
+Example (found in \super-dashboard.ejs):
+
+```<h1>Welcome <%= username %>!</h1>
+    <h3 class="red">
+        Role:<%= role %>
+    </h3>
+    <p>Screen Name: <%= screenName %>
+    </p>
+    <p>Email: <%= email %>
+    </p>
+    <p>Bio: <%= bio %>
+    </p>
+    <a href="/logout">Logout</a>
+```
+
+# Encryption of Sensitive Data
+
+Sensitive data (user's email address and bio) are encrypted before storing in the database with Node's built-in crypto module by:
+
+-creating \utils\encryption.js that handles encrypt and decrypt using AES-256-CBC
+
+-\app.js routes are updated accordingly with encrypt and decrypt methods, for example:
+
+```
+// Superuser-only route
+app.get("/super-dashboard", ensureSuperUser, (req, res) => {
+  // Decrypt sensitive data before sending to template
+  const decryptedEmail = req.user.email ? decrypt(req.user.email) : "";
+  const decryptedBio = req.user.bio ? decrypt(req.user.bio) : "";
+```
+
+# Third-Party Dependency Management
+
+Automated updates and regular security audits were implemented by Creating \.github\workflows\security-check.yml for GitHub Actions:
+
+```
+name: Security Check
+
+on:
+  schedule:
+    - cron: "0 0 * * 0" # Run weekly on Sunday at midnight
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run security audit
+        run: npm audit
+```
+
+which runs once a week and check your dependencies with npm audit for security issues and reports any vulnerabilities if found. The results will show in your GitHub repository's "Actions" tab, if any vulnerabilities are found, it will show in the workflow logs.
+
+Also added local command at package.json:
+`"security": "npm audit"`
+Which allows security checks to run locally by using:
+`npm run security`
 
 # Lessons Learned
 
 There were several challenges I faced during this project:
 
--For local authentication, while it worked with Postman's API test, getting it to work with the web app proved to be a major challenge.
+For Input Validation Implementation, before this course, I only knew how to use HTML or JavaScript to validate input. Using express-validator was new to me, so I had to read the documentation to figure out which methods to use and how to apply them to get the results I wanted.
 
--Getting Google OAuth to work with MongoDB was also a big challenge, especially since there was a bug in the code from Lab 3. It took me a long time to troubleshoot and get it to work.
+For Output Encoding Implementation, this part was a bit easier because I built the web app using EJS, which escapes content by default when using <%= %> tags. This meant that any injected malicious code wouldn’t execute.
 
--Making the backend Node.js server communicate and work with the frontend UI web app was another significant challenge. Since we had never learned this before, I had to teach myself how to use Embedded JavaScript to create dynamic web pages for the UI.
+For Encryption of Sensitive Data, I had to search online to understand how to set it up. At first, I couldn’t get the encryption to work — my web app kept throwing error messages. After a lot of debugging, I realized the problem was that I didn’t specify the AES type correctly, and my encryption key was missing 1 byte (it should have been 32 bytes, but mine was only 31 bytes).
 
-Despite the technical difficulties, this phase of the project was a very valuable learning experience because it taught me:
--How to secure sensitive information by hashing it with Argon2
--Hands-on experience setting up and working with MongoDB to store user login info
--How to implement role-based access control to safeguard user info
--How to use various middleware to strengthen the security of the web app
--How to set up a server to work in tandem with the frontend UI
--How to set up Google OAuth SSO and understand what happens behind the scenes with SSO
--How to use various tools for session management to prevent attackers from exploiting vulnerabilities
+For Third-Party Dependency Management, it was tough because GitHub Actions was new to me. I had to search the internet to learn how to set it up. The examples I found had a ton of features and settings, so I had to go through them carefully to figure out which ones were actually useful for my web app.
+
+After finishing this phase of the project, my security toolbox has expanded. I realized that there are a lot of powerful web security tools, but they aren’t always easy to set up. There are so many parameters to configure, and making everything work together can be frustrating. More than once, I had my web app working fine, but then adding a new security feature caused conflicts with the existing code, breaking the app. Alas, more often than not, the best way to solve these conflicts was to read the documentation carefully and have a lot of patience for trial and error.
