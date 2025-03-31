@@ -13,6 +13,7 @@ const fs = require("fs");
 const hsts = require("hsts");
 const { body, validationResult } = require("express-validator");
 const { ensureAuthenticated, ensureSuperUser } = require("./middlewares/auth");
+const { encrypt, decrypt } = require("./utils/encryption");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -183,10 +184,10 @@ app.post(
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Update user fields with sanitized data
+      // Update user fields with encrypted data
       user.screenName = screenName;
-      user.email = email;
-      user.bio = bio || "";
+      user.email = encrypt(email); // Encrypt email
+      user.bio = bio ? encrypt(bio) : ""; // Encrypt bio if present
 
       await user.save();
 
@@ -242,17 +243,31 @@ app.get("/error", (req, res) => {
 
 // Superuser-only route
 app.get("/super-dashboard", ensureSuperUser, (req, res) => {
+  // Decrypt sensitive data before sending to template
+  const decryptedEmail = req.user.email ? decrypt(req.user.email) : "";
+  const decryptedBio = req.user.bio ? decrypt(req.user.bio) : "";
+
   res.render("super-dashboard", {
     username: req.user.username,
     role: req.user.role,
+    screenName: req.user.screenName,
+    email: decryptedEmail,
+    bio: decryptedBio,
   });
 });
 
 // Normal dashboard route (accessible to all authenticated users)
 app.get("/dashboard", ensureAuthenticated, (req, res) => {
+  // Decrypt sensitive data before sending to template
+  const decryptedEmail = req.user.email ? decrypt(req.user.email) : "";
+  const decryptedBio = req.user.bio ? decrypt(req.user.bio) : "";
+
   res.render("dashboard", {
     username: req.user.username,
     role: req.user.role,
+    screenName: req.user.screenName,
+    email: decryptedEmail,
+    bio: decryptedBio,
   });
 });
 

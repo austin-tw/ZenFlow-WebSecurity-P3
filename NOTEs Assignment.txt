@@ -1,0 +1,39 @@
+Part B, step 3 (input validation technique)
+const { body, validationResult } = require("express-validator");
+
+app.post(
+  "/update-profile",
+  ensureSuperUser,
+  [
+    body("screenName")
+      .trim()
+      .escape()
+      .matches(/^[A-Za-z0-9]{3,50}$/)
+      .withMessage(
+        "Screen name must be 3-50 characters and can only contain letters and numbers"
+      ),
+
+    body("email")
+      .trim()
+      .normalizeEmail()
+      .isEmail()
+      .withMessage("Invalid email format"),
+
+    body("bio")
+      .optional()
+      .trim()
+      .escape()
+      .isLength({ max: 500 })
+      .withMessage("Bio must not exceed 500 characters"),
+  ],
+
+Part B, step 4 (Output Encoding Implementation)
+
+I'm using EJS as the templating engine, which automatically escapes content by default when using the <%= %> tags.
+
+
+
+
+
+
+ENCRYPTION_KEY=abcd-32-byte-secret-key-here-12345
