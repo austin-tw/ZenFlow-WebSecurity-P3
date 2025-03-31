@@ -1,7 +1,8 @@
 const crypto = require("crypto");
+require("dotenv").config();
 
-// Use a fixed key for demo here, todo: move to .env
-const ENCRYPTION_KEY = "MySuperSecureEncryptionKey123456";
+// get encryption key from .env file
+const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY);
 const IV_LENGTH = 16;
 
 function encrypt(text) {
