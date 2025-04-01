@@ -65,6 +65,11 @@ form label {
   margin-top: 1rem;
 }
 
+.text-box {
+  display: block;
+  width: 80ch;
+}
+
 /* ========== Nav Bar ======== */
 #nav-logo {
   width: 11rem;
