@@ -31,14 +31,11 @@
 ## Part C: Create a New Node.js Project
 
 1. Open a terminal or command prompt.
-2. Create a new directory for your project:
-   ` mkdir google-sso-example`
-   `cd google-sso-example`
-3. Run the following command to create a package.json file: npm init -y
-4. Run the following command to install the required packages:
+2. Create a new directory for your project
+3. Run the following command to install the required packages:
    `npm install express argon2 mongoose body-parser dotenv JSON web token express-session passport passport-google-oauth20 helmet connect-mongo csurf ejs https fs hsts express-validator`
-5. Download the files from the repository and paste into your project folder
-6. Create a .env file including:
+4. Download the files from the repository and paste into your project folder
+5. Create a .env file including:
 
 ```
    JWT_SECRET=(make up your own secret key)
